@@ -7,7 +7,9 @@ export interface Post {
 
 const API_BASE = "https://jsonplaceholder.typicode.com";
 
-export async function getPosts(limit = 10): Promise<Post[]> {
+export const POST_COUNT = 10;
+
+export async function getPosts(limit = POST_COUNT): Promise<Post[]> {
   const res = await fetch(`${API_BASE}/posts`);
 
   if (!res.ok) {

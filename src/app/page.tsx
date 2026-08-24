@@ -3,7 +3,7 @@ import { ReadCounterBadge } from "@/components/read-counter-badge";
 import { PostList } from "@/components/post-list";
 
 export default async function Home() {
-  const posts = await getPosts(10);
+  const posts = await getPosts();
 
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-12">
