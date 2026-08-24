@@ -1,29 +1,23 @@
-import Link from "next/link";
 import { getPosts } from "@/lib/posts";
 import { ReadCounterBadge } from "@/components/read-counter-badge";
+import { PostList } from "@/components/post-list";
 
 export default async function Home() {
   const posts = await getPosts(10);
 
   return (
-    <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-16">
-      <header className="mb-8">
-        <h1 className="text-2xl font-semibold">Posts</h1>
+    <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-12">
+      <div className="mb-8 flex items-end justify-between gap-4">
+        <div>
+          <p className="text-xs font-medium uppercase tracking-wider text-amber-700">
+            From the API
+          </p>
+          <h1 className="mt-1 text-2xl font-semibold text-stone-900">Latest posts</h1>
+        </div>
         <ReadCounterBadge />
-      </header>
+      </div>
 
-      <ul className="divide-y divide-zinc-200">
-        {posts.map((post) => (
-          <li key={post.id}>
-            <Link
-              href={`/posts/${post.id}`}
-              className="block py-4 capitalize text-zinc-800 hover:text-blue-600"
-            >
-              {post.title}
-            </Link>
-          </li>
-        ))}
-      </ul>
+      <PostList posts={posts} />
     </main>
   );
 }

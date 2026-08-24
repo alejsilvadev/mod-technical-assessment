@@ -6,10 +6,8 @@ export function ReadCounterBadge() {
   const { count } = useReadCounter();
 
   return (
-    <p className="text-sm text-zinc-500">
-      {count === 0
-        ? "You haven't read any articles yet"
-        : `You've read ${count} article${count === 1 ? "" : "s"} this visit`}
-    </p>
+    <span className="shrink-0 rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-800">
+      {count} read this visit
+    </span>
   );
 }
