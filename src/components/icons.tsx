@@ -35,3 +35,22 @@ export function ArrowLeftIcon({ className }: { className?: string }) {
     </svg>
   );
 }
+
+export function ArrowDownIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      fill="none"
+      className={className}
+      aria-hidden
+    >
+      <path
+        d="M8 3.5v9M4 8.5l4 4 4-4"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
