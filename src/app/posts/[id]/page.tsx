@@ -21,12 +21,12 @@ export default async function PostDetails({
   const hasNext = post.id < POST_COUNT;
 
   return (
-    <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-12">
+    <main className="mx-auto w-full max-w-2xl flex-1 px-6 pb-12 pt-28">
       <TrackRead postId={post.id} />
 
       <Link
         href="/"
-        className="group inline-flex items-center gap-1.5 text-sm text-stone-500 hover:text-amber-800"
+        className="group inline-flex items-center gap-1.5 text-sm text-stone-500 hover:text-brand-800"
       >
         <ArrowLeftIcon className="h-3.5 w-3.5 transition-transform duration-200 group-hover:-translate-x-1" />
         back to posts
@@ -38,7 +38,7 @@ export default async function PostDetails({
         {hasPrevious ? (
           <Link
             href={`/posts/${post.id - 1}`}
-            className="group inline-flex items-center gap-1.5 rounded-full border border-stone-200 bg-white px-4 py-2 text-sm text-stone-600 hover:border-amber-300 hover:text-amber-800"
+            className="group inline-flex items-center gap-1.5 rounded-full border border-stone-200 bg-white px-4 py-2 text-sm text-stone-600 hover:border-brand-300 hover:text-brand-800"
           >
             <ArrowLeftIcon className="h-3.5 w-3.5 transition-transform duration-200 group-hover:-translate-x-1" />
             previous
@@ -50,7 +50,7 @@ export default async function PostDetails({
         {hasNext ? (
           <Link
             href={`/posts/${post.id + 1}`}
-            className="group inline-flex items-center gap-1.5 rounded-full border border-stone-200 bg-white px-4 py-2 text-sm text-stone-600 hover:border-amber-300 hover:text-amber-800"
+            className="group inline-flex items-center gap-1.5 rounded-full border border-stone-200 bg-white px-4 py-2 text-sm text-stone-600 hover:border-brand-300 hover:text-brand-800"
           >
             next
             <ArrowRightIcon className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-1" />

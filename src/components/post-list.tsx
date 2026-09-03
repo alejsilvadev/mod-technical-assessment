@@ -27,13 +27,13 @@ export function PostList({ posts }: { posts: Post[] }) {
         <li key={post.id}>
           <Link
             href={`/posts/${post.id}`}
-            className="group flex items-center gap-4 py-4 capitalize text-stone-800 transition-colors hover:text-amber-800"
+            className="group flex items-center gap-4 py-4 capitalize text-stone-800 transition-colors hover:text-brand-800"
           >
             <span className="text-xs text-stone-300 tabular-nums">
               {String(index + 1).padStart(2, "0")}
             </span>
             <span className="flex-1">{post.title}</span>
-            <ArrowRightIcon className="h-4 w-4 shrink-0 text-stone-300 transition-transform duration-200 group-hover:translate-x-1 group-hover:text-amber-600" />
+            <ArrowRightIcon className="h-4 w-4 shrink-0 text-stone-300 transition-transform duration-200 group-hover:translate-x-1 group-hover:text-brand-600" />
           </Link>
         </li>
       ))}

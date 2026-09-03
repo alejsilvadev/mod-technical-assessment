@@ -1,11 +1,16 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { Figtree } from "next/font/google";
+import { Figtree, Bodoni_Moda } from "next/font/google";
 import { ReadCounterProvider } from "@/context/read-counter";
+import { Navbar } from "@/components/navbar";
 import "./globals.css";
 
 const figtree = Figtree({
   variable: "--font-figtree",
+  subsets: ["latin"],
+});
+
+const bodoniModa = Bodoni_Moda({
+  variable: "--font-bodoni-moda",
   subsets: ["latin"],
 });
 
@@ -16,19 +21,13 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${figtree.variable} h-full antialiased`}>
+    <html
+      lang="en"
+      className={`${figtree.variable} ${bodoniModa.variable} h-full scroll-smooth antialiased`}
+    >
       <body className="min-h-full flex flex-col">
         <ReadCounterProvider>
-          <header className="border-b border-stone-200 bg-white">
-            <div className="mx-auto flex w-full max-w-2xl items-center px-6 py-4">
-              <Link href="/" className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-amber-500" />
-                <span className="text-sm font-semibold tracking-tight text-stone-900">
-                  MOD JSON Posts
-                </span>
-              </Link>
-            </div>
-          </header>
+          <Navbar />
           {children}
         </ReadCounterProvider>
       </body>

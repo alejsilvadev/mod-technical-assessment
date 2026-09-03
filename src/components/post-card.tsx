@@ -20,13 +20,13 @@ export function PostCard({ post }: { post: Post }) {
 
   return (
     <article ref={cardRef} className="mt-6 rounded-lg bg-white p-8 shadow-sm">
-      <p className="text-xs font-medium uppercase tracking-wider text-amber-700">
+      <p className="text-xs font-medium uppercase tracking-wider text-brand-700">
         Post #{post.id}
       </p>
       <h1 className="mt-2 text-2xl font-semibold capitalize leading-snug text-stone-900">
         {post.title}
       </h1>
-      <div className="mt-4 h-0.5 w-12 bg-amber-500" />
+      <div className="mt-4 h-0.5 w-12 bg-brand-600" />
       <p className="mt-4 max-w-prose leading-relaxed text-stone-600">{post.body}</p>
     </article>
   );
