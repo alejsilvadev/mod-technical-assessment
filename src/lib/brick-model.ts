@@ -1,7 +1,7 @@
 export type BrickPiece = {
   id: string;
-  shape?: "box" | "cylinder" | "sphere";
-  /** box: [width, height, depth]. cylinder: [bottom diameter, height, unused]. sphere: [diameterX, diameterY, diameterZ]. */
+  shape?: "box" | "cylinder" | "sphere" | "wedge";
+  /** box: [width, height, depth]. cylinder/wedge: [diameter, height, unused]. sphere: [diameterX, diameterY, diameterZ]. */
   size: [number, number, number];
   color: string;
   assembledPosition: [number, number, number];
@@ -11,24 +11,133 @@ export type BrickPiece = {
   opacity?: number;
   /** cylinder only: ratio of top radius to bottom radius. 1 = uniform cylinder, 0 = a point (cone). Defaults to 1. */
   taper?: number;
+  /** wedge only: how many equal wedges make up the full ring (used to size the arc). Defaults to 6. */
+  wedgeCount?: number;
+  /**
+   * Overrides the computed explode direction. Needed for wedges: every wedge
+   * in a ring shares the same assembledPosition (the ring's own center, so
+   * the geometry assembles with no gap), so the normal position-based
+   * direction would be identical for all of them and they'd move as one
+   * rigid block instead of separating from each other.
+   */
+  explodeDirectionHint?: [number, number, number];
 };
 
-const BODY_GRAY = "#b8b8b8";
-const ACCENT_GRAY = "#eeeeee";
+// muted, brand-adjacent tone for the main livery surfaces, plus the exact
+// brand red reserved for thin accent stripes and the badge, so it reads as
+// one deliberate accent rather than being spread thin across the whole model
+const BOOSTER_MUTED = "#9c4f56";
+const BRAND_RED = "#f40333";
 const DARK_GRAY = "#3d3d3d";
 const DETAIL_GRAY = "#8c8c8c";
 const LIGHT_GRAY = "#f0f0f0";
+const FLAME_ORANGE = "#e2662f";
+const FLAME_YELLOW = "#f6c453";
+
+// a main hull cylinder, split into `count` equal standing wedges around its
+// own axis (rotated to their angular slot) instead of one solid ring, so the
+// body visibly comes apart into curved wall segments like it's built from
+const WEDGE_COUNT = 6;
+
+function wedgeRing(
+  idPrefix: string,
+  diameter: number,
+  height: number,
+  y: number,
+  color: string,
+  count: number = WEDGE_COUNT,
+  centerX: number = 0,
+  centerZ: number = 0
+): BrickPiece[] {
+  return Array.from({ length: count }, (_, i) => {
+    // matches how a wedge's own geometry is oriented: at rotation.y = 0 it
+    // bulges toward world +X, so spinning it by theta around Y sends its
+    // outward direction to (cos theta, 0, -sin theta)
+    const theta = (i / count) * Math.PI * 2;
+    return {
+      id: `${idPrefix}-wedge-${i + 1}`,
+      shape: "wedge" as const,
+      size: [diameter, height, diameter] as [number, number, number],
+      color,
+      assembledPosition: [centerX, y, centerZ] as [number, number, number],
+      rotation: [0, theta, 0] as [number, number, number],
+      wedgeCount: count,
+      explodeDirectionHint: [Math.cos(theta), 0, -Math.sin(theta)] as [number, number, number],
+    };
+  });
+}
+
+// a strap-on side booster: hull wedges, a tapered nose, a rounded tip, a
+// brand-red accent band, and its own small flame cluster underneath
+function sideBooster(idPrefix: string, x: number): BrickPiece[] {
+  const diameter = 1.15;
+  const bodyHeight = 2.0;
+  const noseHeight = 0.4;
+  const noseY = bodyHeight + noseHeight / 2;
+  const tipY = bodyHeight + noseHeight + 0.05;
+
+  return [
+    ...wedgeRing(`${idPrefix}-body`, diameter, bodyHeight, bodyHeight / 2, BOOSTER_MUTED, WEDGE_COUNT, x, 0),
+    {
+      id: `${idPrefix}-band`,
+      shape: "cylinder",
+      size: [diameter * 1.03, 0.07, diameter * 1.03],
+      color: BRAND_RED,
+      assembledPosition: [x, bodyHeight * 0.65, 0],
+      rotation: [0, 0, 0],
+    },
+    {
+      id: `${idPrefix}-nose`,
+      shape: "cylinder",
+      size: [diameter, noseHeight, diameter],
+      color: LIGHT_GRAY,
+      assembledPosition: [x, noseY, 0],
+      rotation: [0, 0, 0],
+      taper: 0.12,
+    },
+    {
+      id: `${idPrefix}-tip`,
+      shape: "sphere",
+      size: [0.12, 0.12, 0.12],
+      color: LIGHT_GRAY,
+      assembledPosition: [x, tipY, 0],
+      rotation: [0, 0, 0],
+    },
+    {
+      id: `${idPrefix}-flame-a`,
+      shape: "cylinder",
+      size: [0.22, 0.55, 0.22],
+      color: FLAME_ORANGE,
+      assembledPosition: [x - 0.1, -0.275, 0],
+      rotation: [0, 0, 0],
+      taper: 3.2,
+      transparent: true,
+      opacity: 0.85,
+    },
+    {
+      id: `${idPrefix}-flame-b`,
+      shape: "cylinder",
+      size: [0.22, 0.45, 0.22],
+      color: FLAME_ORANGE,
+      assembledPosition: [x + 0.1, -0.225, 0],
+      rotation: [0, 0, 0],
+      taper: 3.2,
+      transparent: true,
+      opacity: 0.85,
+    },
+  ];
+}
 
 export const PIECES: BrickPiece[] = [
-  // booster stage: body, base skirt ring, mid band, 4 tail fins, 4 engine bells
-  { id: "booster-body", shape: "cylinder", size: [1.8, 2.0, 1.8], color: BODY_GRAY, assembledPosition: [0, 1.0, 0], rotation: [0, 0, 0] },
+  // booster stage: body (6 wedges), base skirt ring, mid band, 4 tail fins, 4 engine bells
+  ...wedgeRing("booster-body", 1.8, 2.0, 1.0, BOOSTER_MUTED),
   { id: "booster-base-ring", shape: "cylinder", size: [1.9, 0.15, 1.9], color: DETAIL_GRAY, assembledPosition: [0, 0.075, 0], rotation: [0, 0, 0] },
-  { id: "booster-accent-stripe", shape: "cylinder", size: [1.83, 0.06, 1.83], color: ACCENT_GRAY, assembledPosition: [0, 0.6, 0], rotation: [0, 0, 0] },
+  { id: "booster-accent-stripe", shape: "cylinder", size: [1.83, 0.06, 1.83], color: BRAND_RED, assembledPosition: [0, 0.6, 0], rotation: [0, 0, 0] },
   { id: "booster-mid-band", shape: "cylinder", size: [1.85, 0.1, 1.85], color: DETAIL_GRAY, assembledPosition: [0, 1.4, 0], rotation: [0, 0, 0] },
-  { id: "fin-north", size: [0.6, 1.0, 0.05], color: DETAIL_GRAY, assembledPosition: [0, 0.5, 0.95], rotation: [0, 0, 0], studs: true },
-  { id: "fin-south", size: [0.6, 1.0, 0.05], color: DETAIL_GRAY, assembledPosition: [0, 0.5, -0.95], rotation: [0, 0, 0], studs: true },
-  { id: "fin-east", size: [0.05, 1.0, 0.6], color: DETAIL_GRAY, assembledPosition: [0.95, 0.5, 0], rotation: [0, 0, 0], studs: true },
-  { id: "fin-west", size: [0.05, 1.0, 0.6], color: DETAIL_GRAY, assembledPosition: [-0.95, 0.5, 0], rotation: [0, 0, 0], studs: true },
+  { id: "fin-north", size: [0.6, 1.0, 0.05], color: BOOSTER_MUTED, assembledPosition: [0, 0.5, 0.95], rotation: [0, 0, 0], studs: true },
+  { id: "fin-south", size: [0.6, 1.0, 0.05], color: BOOSTER_MUTED, assembledPosition: [0, 0.5, -0.95], rotation: [0, 0, 0], studs: true },
+  { id: "fin-east", size: [0.05, 1.0, 0.6], color: BOOSTER_MUTED, assembledPosition: [0.95, 0.5, 0], rotation: [0, 0, 0], studs: true },
+  { id: "fin-west", size: [0.05, 1.0, 0.6], color: BOOSTER_MUTED, assembledPosition: [-0.95, 0.5, 0], rotation: [0, 0, 0], studs: true },
   { id: "engine-bell-1", shape: "cylinder", size: [0.56, 0.4, 0.56], color: DARK_GRAY, assembledPosition: [0.4, -0.15, 0.4], rotation: [0, 0, 0], taper: 0.55 },
   { id: "engine-bell-2", shape: "cylinder", size: [0.56, 0.4, 0.56], color: DARK_GRAY, assembledPosition: [-0.4, -0.15, 0.4], rotation: [0, 0, 0], taper: 0.55 },
   { id: "engine-bell-3", shape: "cylinder", size: [0.56, 0.4, 0.56], color: DARK_GRAY, assembledPosition: [0.4, -0.15, -0.4], rotation: [0, 0, 0], taper: 0.55 },
@@ -45,10 +154,10 @@ export const PIECES: BrickPiece[] = [
   { id: "interstage-vent-left", size: [0.1, 0.08, 0.1], color: DARK_GRAY, assembledPosition: [0.65, 2.15, 0.4], rotation: [0, 0, 0] },
   { id: "interstage-vent-right", size: [0.1, 0.08, 0.1], color: DARK_GRAY, assembledPosition: [-0.65, 2.15, 0.4], rotation: [0, 0, 0] },
 
-  // stage 2: body, band, accent stripe, single vernier engine, RCS thruster pods
-  { id: "stage2-body", shape: "cylinder", size: [1.5, 1.6, 1.5], color: BODY_GRAY, assembledPosition: [0, 3.1, 0], rotation: [0, 0, 0] },
+  // stage 2: body (6 wedges), band, accent stripe, single vernier engine, RCS thruster pods
+  ...wedgeRing("stage2-body", 1.5, 1.6, 3.1, BOOSTER_MUTED),
   { id: "stage2-band", shape: "cylinder", size: [1.53, 0.1, 1.53], color: DETAIL_GRAY, assembledPosition: [0, 3.6, 0], rotation: [0, 0, 0] },
-  { id: "stage2-accent-stripe", shape: "cylinder", size: [1.52, 0.05, 1.52], color: ACCENT_GRAY, assembledPosition: [0, 3.3, 0], rotation: [0, 0, 0] },
+  { id: "stage2-accent-stripe", shape: "cylinder", size: [1.52, 0.05, 1.52], color: BRAND_RED, assembledPosition: [0, 3.3, 0], rotation: [0, 0, 0] },
   { id: "stage2-engine", shape: "cylinder", size: [0.44, 0.3, 0.44], color: DARK_GRAY, assembledPosition: [0, 2.15, 0], rotation: [0, 0, 0], taper: 0.55 },
   { id: "porthole-stage2", shape: "cylinder", size: [0.18, 0.03, 0.18], color: DARK_GRAY, assembledPosition: [0, 3.3, 0.76], rotation: [Math.PI / 2, 0, 0] },
   { id: "rcs-thruster-front", size: [0.15, 0.15, 0.15], color: DETAIL_GRAY, assembledPosition: [0, 3.4, 0.75], rotation: [0, 0, 0] },
@@ -59,16 +168,16 @@ export const PIECES: BrickPiece[] = [
   // interstage 2: tapered collar down to stage 3
   { id: "interstage-2", shape: "cylinder", size: [1.5, 0.25, 1.5], color: DETAIL_GRAY, assembledPosition: [0, 4.025, 0], rotation: [0, 0, 0], taper: 1.2 / 1.5 },
 
-  // stage 3: body, band, accent stripe, engine, decal
-  { id: "stage3-body", shape: "cylinder", size: [1.2, 1.2, 1.2], color: BODY_GRAY, assembledPosition: [0, 4.75, 0], rotation: [0, 0, 0] },
+  // stage 3: body (6 wedges), band, accent stripe, engine, decal
+  ...wedgeRing("stage3-body", 1.2, 1.2, 4.75, BOOSTER_MUTED),
   { id: "stage3-band", shape: "cylinder", size: [1.23, 0.1, 1.23], color: DETAIL_GRAY, assembledPosition: [0, 5.2, 0], rotation: [0, 0, 0] },
-  { id: "stage3-accent-stripe", shape: "cylinder", size: [1.22, 0.05, 1.22], color: ACCENT_GRAY, assembledPosition: [0, 4.55, 0], rotation: [0, 0, 0] },
+  { id: "stage3-accent-stripe", shape: "cylinder", size: [1.22, 0.05, 1.22], color: BRAND_RED, assembledPosition: [0, 4.55, 0], rotation: [0, 0, 0] },
   { id: "stage3-engine", shape: "cylinder", size: [0.36, 0.25, 0.36], color: DARK_GRAY, assembledPosition: [0, 4.025, 0], rotation: [0, 0, 0], taper: 0.55 },
   { id: "porthole-stage3", shape: "cylinder", size: [0.16, 0.025, 0.16], color: DARK_GRAY, assembledPosition: [0, 4.9, 0.61], rotation: [Math.PI / 2, 0, 0] },
-  { id: "decal-plate", size: [0.2, 0.15, 0.03], color: LIGHT_GRAY, assembledPosition: [0, 4.6, -0.62], rotation: [0, 0, 0] },
+  { id: "decal-plate", size: [0.2, 0.15, 0.03], color: BRAND_RED, assembledPosition: [0, 4.6, -0.62], rotation: [0, 0, 0] },
 
-  // payload fairing base
-  { id: "fairing-body", shape: "cylinder", size: [1.0, 0.6, 1.0], color: LIGHT_GRAY, assembledPosition: [0, 5.65, 0], rotation: [0, 0, 0] },
+  // payload fairing base (6 wedges)
+  ...wedgeRing("fairing-body", 1.0, 0.6, 5.65, LIGHT_GRAY),
   { id: "fairing-band", shape: "cylinder", size: [1.04, 0.08, 1.04], color: DETAIL_GRAY, assembledPosition: [0, 5.98, 0], rotation: [0, 0, 0] },
   { id: "porthole-fairing", shape: "cylinder", size: [0.14, 0.025, 0.14], color: DARK_GRAY, assembledPosition: [0, 5.75, -0.52], rotation: [Math.PI / 2, 0, 0] },
   { id: "comms-dish", size: [0.12, 0.12, 0.06], color: LIGHT_GRAY, assembledPosition: [0, 5.5, -0.51], rotation: [0, 0, 0] },
@@ -79,12 +188,18 @@ export const PIECES: BrickPiece[] = [
   { id: "nose-tip-cap", shape: "sphere", size: [0.14, 0.14, 0.14], color: LIGHT_GRAY, assembledPosition: [0, 7.14, 0], rotation: [0, 0, 0] },
   { id: "antenna", shape: "cylinder", size: [0.03, 0.4, 0.03], color: DARK_GRAY, assembledPosition: [0, 7.35, 0], rotation: [0, 0, 0] },
 
-  // launch platform, sitting under the booster
-  { id: "launch-platform", size: [2.4, 0.15, 2.4], color: DETAIL_GRAY, assembledPosition: [0, -0.075, 0], rotation: [0, 0, 0], studs: true },
-  { id: "support-leg-1", size: [0.15, 0.4, 0.15], color: DARK_GRAY, assembledPosition: [-1.0, -0.35, -1.0], rotation: [0, 0, 0] },
-  { id: "support-leg-2", size: [0.15, 0.4, 0.15], color: DARK_GRAY, assembledPosition: [1.0, -0.35, -1.0], rotation: [0, 0, 0] },
-  { id: "support-leg-3", size: [0.15, 0.4, 0.15], color: DARK_GRAY, assembledPosition: [-1.0, -0.35, 1.0], rotation: [0, 0, 0] },
-  { id: "support-leg-4", size: [0.15, 0.4, 0.15], color: DARK_GRAY, assembledPosition: [1.0, -0.35, 1.0], rotation: [0, 0, 0] },
+  // exhaust plume: a bright glow, a tall hot core, and four flickering
+  // flame cones (one per engine bell), caught mid-launch
+  { id: "flame-glow", shape: "sphere", size: [0.9, 0.3, 0.9], color: FLAME_YELLOW, assembledPosition: [0, -0.3, 0], rotation: [0, 0, 0], transparent: true, opacity: 0.7 },
+  { id: "flame-core", shape: "cylinder", size: [0.12, 0.75, 0.12], color: FLAME_YELLOW, assembledPosition: [0, -0.725, 0], rotation: [0, 0, 0], taper: 5, transparent: true, opacity: 0.8 },
+  { id: "flame-engine-1", shape: "cylinder", size: [0.08, 0.5, 0.08], color: FLAME_ORANGE, assembledPosition: [0.4, -0.6, 0.4], rotation: [0, 0, 0], taper: 6.5, transparent: true, opacity: 0.85 },
+  { id: "flame-engine-2", shape: "cylinder", size: [0.08, 0.6, 0.08], color: FLAME_ORANGE, assembledPosition: [-0.4, -0.65, 0.4], rotation: [0, 0, 0], taper: 6.5, transparent: true, opacity: 0.85 },
+  { id: "flame-engine-3", shape: "cylinder", size: [0.08, 0.55, 0.08], color: FLAME_ORANGE, assembledPosition: [0.4, -0.625, -0.4], rotation: [0, 0, 0], taper: 6.5, transparent: true, opacity: 0.85 },
+  { id: "flame-engine-4", shape: "cylinder", size: [0.08, 0.45, 0.08], color: FLAME_ORANGE, assembledPosition: [-0.4, -0.575, -0.4], rotation: [0, 0, 0], taper: 6.5, transparent: true, opacity: 0.85 },
+
+  // strap-on side boosters, flanking the main stack
+  ...sideBooster("side-left", -1.65),
+  ...sideBooster("side-right", 1.65),
 ];
 
 const DISTANCE = 3;
@@ -138,14 +253,29 @@ export type PieceMeta = BrickPiece & {
   tumbleMagnitude: number;
 };
 
+// direction is derived from each piece's actual offset from the model's
+// centroid, so a piece on the left always moves left, one on the right
+// always moves right, and paths never cross. Horizontal offset is boosted
+// relative to vertical, since a model built as a tall, mostly axis-centered
+// stack has very little natural left/right signal otherwise (most pieces
+// would fly almost straight up or down and read as one-dimensional)
+const HORIZONTAL_BOOST = 3.5;
+
 export const pieceMeta: PieceMeta[] = PIECES.map((piece, index) => {
   const offset = subtract(piece.assembledPosition, centroid);
   const dist = length(offset);
+  const boostedOffset: [number, number, number] = [
+    offset[0] * HORIZONTAL_BOOST,
+    offset[1],
+    offset[2] * HORIZONTAL_BOOST,
+  ];
   const fallbackDir: [number, number, number] = normalize(
     [Math.sin(index), 1, Math.cos(index)],
     [0, 1, 0]
   );
-  const direction = normalize(offset, fallbackDir);
+  const direction = piece.explodeDirectionHint
+    ? normalize(piece.explodeDirectionHint, fallbackDir)
+    : normalize(boostedOffset, fallbackDir);
 
   const explodedPosition: [number, number, number] = [
     piece.assembledPosition[0] + direction[0] * DISTANCE,

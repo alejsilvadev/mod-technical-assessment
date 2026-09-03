@@ -1,10 +1,23 @@
 "use client";
 
-import { useEffect, useRef, useState, type RefObject } from "react";
+import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, ContactShadows, Edges, RoundedBoxGeometry } from "@react-three/drei";
-import type { Group } from "three";
+import { Shape, type Group } from "three";
 import { pieceMeta, getPieceTransform, type PieceMeta } from "@/lib/brick-model";
+
+// a solid pie-slice, centered on its own bisector, extruded along local Z.
+// used for wedges that make up a ring; ExtrudeGeometry (unlike a partial
+// CylinderGeometry) closes the two flat cut faces, so it never renders hollow
+function buildWedgeShape(radius: number, angle: number): Shape {
+  const half = angle / 2;
+  const shape = new Shape();
+  shape.moveTo(0, 0);
+  shape.lineTo(radius * Math.cos(-half), radius * Math.sin(-half));
+  shape.absarc(0, 0, radius, -half, half, false);
+  shape.lineTo(0, 0);
+  return shape;
+}
 
 const STUD_RADIUS = 0.14;
 const STUD_HEIGHT = 0.14;
@@ -132,21 +145,35 @@ function BrickMesh({ piece }: { piece: PieceMeta }) {
   const [w, h, d] = piece.size;
   const isCylinder = piece.shape === "cylinder";
   const isSphere = piece.shape === "sphere";
-  const isBox = !isCylinder && !isSphere;
+  const isWedge = piece.shape === "wedge";
+  const isBox = !isCylinder && !isSphere && !isWedge;
   const studPositions = piece.studs && isBox ? buildStudGrid(w, d) : [];
 
-  // a rounded box's bevel introduces many shallow-angle facets; a wide
-  // threshold keeps outlines at the real panel edges instead of the bevel
+  const wedgeShape = useMemo(
+    () => (isWedge ? buildWedgeShape(w / 2, (Math.PI * 2) / (piece.wedgeCount ?? 6)) : null),
+    [isWedge, w, piece.wedgeCount]
+  );
+
+  // a rounded box's bevel (and a wedge's swept arc) introduces many
+  // shallow-angle facets; a wide threshold keeps outlines at the real
+  // panel edges instead of the curve
   const boxRadius = Math.min(0.06, Math.min(w, h, d) * 0.22);
 
   return (
     <>
-      <mesh scale={isSphere ? [w / 2, h / 2, d / 2] : [1, 1, 1]}>
+      <mesh
+        scale={isSphere ? [w / 2, h / 2, d / 2] : [1, 1, 1]}
+        position={isWedge ? [0, -h / 2, 0] : [0, 0, 0]}
+        rotation={isWedge ? [-Math.PI / 2, 0, 0] : [0, 0, 0]}
+      >
         {isSphere && <sphereGeometry args={[1, 24, 16]} />}
         {isCylinder && <cylinderGeometry args={[(w / 2) * (piece.taper ?? 1), w / 2, h, 24]} />}
         {isBox && <RoundedBoxGeometry args={[w, h, d]} radius={boxRadius} smoothness={3} />}
+        {isWedge && wedgeShape && (
+          <extrudeGeometry args={[wedgeShape, { depth: h, bevelEnabled: false, curveSegments: 8 }]} />
+        )}
         <meshStandardMaterial color={piece.color} roughness={0.6} metalness={0.02} transparent />
-        {!isSphere && <Edges threshold={isBox ? 45 : 15} color="black" lineWidth={1} />}
+        {!isSphere && <Edges threshold={isBox || isWedge ? 45 : 15} color="black" lineWidth={1} />}
       </mesh>
       {studPositions.map(([sx, sz], i) => (
         <mesh key={i} position={[sx, h / 2 + STUD_HEIGHT / 2, sz]}>

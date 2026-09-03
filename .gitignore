@@ -36,6 +36,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# raw source assets (not served — optimized copies live in /public)
+/assets
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

@@ -1,7 +1,8 @@
 export default function Loading() {
   return (
-    <main className="mx-auto w-full max-w-2xl flex-1 px-6 py-12">
-      <p className="text-sm text-stone-400">Loading posts...</p>
+    <main className="flex min-h-screen w-full items-center justify-center bg-stone-950" role="status">
+      <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+      <span className="sr-only">Loading</span>
     </main>
   );
 }
