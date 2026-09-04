@@ -38,6 +38,18 @@ const STAGGER_SPAN = 0.88;
 const X_START_FRACTION = 0.26;
 const X_END_FRACTION = -0.26;
 
+// the left slot exits early in the move phase, well before the sphere's
+// circle (measured, not its square SVG box) ever reaches that side. The
+// right slot stays hidden until the sphere is nearly all the way to its
+// final position on the left, so the two never visibly overlap; it then
+// exits the same way the left slot did, on its own timer once the sphere
+// starts unraveling (the sphere holds still there, so no overlap risk)
+const TEXT_LEFT_EXIT_SPAN = 0.4;
+const TEXT_ENTER_START = 0.78;
+const TEXT_ENTER_SPAN = 0.22;
+const TEXT_UNRAVEL_EXIT_SPAN = 0.4;
+const TEXT_SLIDE_OFFSET = 32;
+
 // idle "breathing" ripple: each line oscillates along the sphere's own tilt
 // axis, and lines further down lag further behind in phase — so at any
 // instant the top line is already reversing while the ones below it are
@@ -96,12 +108,14 @@ interface WireframeSphereProps {
   // white the lab page was tuned against; the homepage passes the site's
   // own background token so the section reads as part of the page
   backgroundClassName?: string;
+  showScrollCue?: boolean;
 }
 
 export function WireframeSphere({
   leftSlot,
   rightSlot,
   backgroundClassName = "bg-white",
+  showScrollCue = true,
 }: WireframeSphereProps = {}) {
   const trackRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -169,6 +183,11 @@ export function WireframeSphere({
       }
       const eased = easeInOutCubic(moveT);
 
+      let unravelT = 0;
+      if (progress > MOVE_END) {
+        unravelT = clamp01((progress - MOVE_END) / (1 - MOVE_END));
+      }
+
       if (stageRef.current && containerRef.current) {
         const width = containerRef.current.getBoundingClientRect().width;
         const fraction = X_START_FRACTION + (X_END_FRACTION - X_START_FRACTION) * eased;
@@ -180,8 +199,27 @@ export function WireframeSphere({
         groupRef.current.setAttribute("transform", `rotate(${azimuth} ${CENTER} ${CENTER})`);
       }
 
-      if (leftSlotRef.current) leftSlotRef.current.style.opacity = String(1 - eased);
-      if (rightSlotRef.current) rightSlotRef.current.style.opacity = String(eased);
+      // left slot: fades away and slides down, once, early — well clear of
+      // the sphere before it ever crosses into that side of the section
+      const leftExitEased = easeInOutCubic(clamp01(moveT / TEXT_LEFT_EXIT_SPAN));
+      if (leftSlotRef.current) {
+        leftSlotRef.current.style.opacity = String(1 - leftExitEased);
+        leftSlotRef.current.style.transform = `translateY(calc(-50% + ${leftExitEased * TEXT_SLIDE_OFFSET}px))`;
+      }
+
+      // right slot: stays hidden until the sphere is nearly at its final
+      // position, then fades/slides down INTO frame from above; once the
+      // sphere starts unraveling it fades/slides down OUT the same way
+      const rightEnterEased = easeInOutCubic(
+        clamp01((moveT - TEXT_ENTER_START) / TEXT_ENTER_SPAN)
+      );
+      const rightExitEased = easeInOutCubic(clamp01(unravelT / TEXT_UNRAVEL_EXIT_SPAN));
+      if (rightSlotRef.current) {
+        const rightOpacity = rightEnterEased * (1 - rightExitEased);
+        const rightY = -TEXT_SLIDE_OFFSET * (1 - rightEnterEased) + TEXT_SLIDE_OFFSET * rightExitEased;
+        rightSlotRef.current.style.opacity = String(rightOpacity);
+        rightSlotRef.current.style.transform = `translateY(calc(-50% + ${rightY}px))`;
+      }
 
       if (cueRef.current) cueRef.current.style.opacity = progress > 0.03 ? "0" : "1";
     }
@@ -251,13 +289,15 @@ export function WireframeSphere({
           </div>
         )}
 
-        <div
-          ref={cueRef}
-          className="absolute top-24 flex flex-col items-center gap-2 text-xs text-stone-400 opacity-0 transition-opacity duration-300"
-        >
-          <span>Scroll</span>
-          <ArrowDownIcon className="h-3 w-3" />
-        </div>
+        {showScrollCue && (
+          <div
+            ref={cueRef}
+            className="absolute top-24 flex flex-col items-center gap-2 text-xs text-stone-400 opacity-0 transition-opacity duration-300"
+          >
+            <span>Scroll</span>
+            <ArrowDownIcon className="h-3 w-3" />
+          </div>
+        )}
 
         <div ref={stageRef} className="h-[68vmin] w-[68vmin]">
           <svg

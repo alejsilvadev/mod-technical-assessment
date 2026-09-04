@@ -15,18 +15,21 @@ interface WireframeSphereLoaderProps {
   leftSlot?: ReactNode;
   rightSlot?: ReactNode;
   backgroundClassName?: string;
+  showScrollCue?: boolean;
 }
 
 export function WireframeSphereLoader({
   leftSlot,
   rightSlot,
   backgroundClassName,
+  showScrollCue,
 }: WireframeSphereLoaderProps) {
   return (
     <WireframeSphere
       leftSlot={leftSlot}
       rightSlot={rightSlot}
       backgroundClassName={backgroundClassName}
+      showScrollCue={showScrollCue}
     />
   );
 }

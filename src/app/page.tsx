@@ -14,6 +14,7 @@ export default async function Home() {
       <section id="about" className="mx-auto w-full max-w-6xl px-6">
         <WireframeSphereLoader
           backgroundClassName="bg-background"
+          showScrollCue={false}
           leftSlot={
             <>
               <p className="font-sans text-[18px] font-bold uppercase leading-[28px] text-brand-700">
