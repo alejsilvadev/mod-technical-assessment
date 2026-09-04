@@ -148,7 +148,7 @@ export function LogoReveal() {
 
         <div className="mod-reveal relative flex flex-col items-center gap-4 text-center">
           <div className="mod-rule h-1 w-24 origin-center bg-brand-600" />
-          <p className="max-w-md text-[22px] text-stone-200">
+          <p className="max-w-md text-2xl text-stone-200">
             Make something worth remembering.
           </p>
         </div>

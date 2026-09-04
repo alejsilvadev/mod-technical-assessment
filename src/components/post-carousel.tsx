@@ -6,9 +6,15 @@ import Link from "next/link";
 import type { Post } from "@/lib/posts";
 import { ArrowRightIcon } from "@/components/icons";
 
-const ACTIVE_WIDTH = 46;
-const ITEM_WIDTH = 24;
-const GAP = 1;
+// Desktop shows a coverflow of several cards at once; on mobile that made
+// each card narrow and oddly tall, so the active card takes up almost the
+// full width there instead, with just a small peek of the next one.
+const DESKTOP_ACTIVE_WIDTH = 46;
+const DESKTOP_ITEM_WIDTH = 24;
+const DESKTOP_GAP = 1;
+const MOBILE_ACTIVE_WIDTH = 86;
+const MOBILE_ITEM_WIDTH = 10;
+const MOBILE_GAP = 2;
 // Picsum photo IDs hand-picked for city/nature shots, in place of the
 // previous random per-post seed (which could land on anything).
 const CARD_IMAGE_IDS = [122, 860, 231, 1058, 740, 1075, 430, 49, 10, 29];
@@ -30,7 +36,25 @@ function getReducedMotionServer() {
   return false;
 }
 
+// Matches Tailwind's default `sm:` breakpoint.
+function subscribeIsDesktop(onChange: () => void) {
+  const query = window.matchMedia("(min-width: 640px)");
+  query.addEventListener("change", onChange);
+  return () => query.removeEventListener("change", onChange);
+}
+function getIsDesktop() {
+  return window.matchMedia("(min-width: 640px)").matches;
+}
+function getIsDesktopServer() {
+  return true;
+}
+
 export function PostCarousel({ posts }: { posts: Post[] }) {
+  const isDesktop = useSyncExternalStore(subscribeIsDesktop, getIsDesktop, getIsDesktopServer);
+  const activeWidth = isDesktop ? DESKTOP_ACTIVE_WIDTH : MOBILE_ACTIVE_WIDTH;
+  const itemWidth = isDesktop ? DESKTOP_ITEM_WIDTH : MOBILE_ITEM_WIDTH;
+  const gap = isDesktop ? DESKTOP_GAP : MOBILE_GAP;
+
   const [activeIndex, setActiveIndex] = useState(0);
   // The card leaving the active slot fades out in place instead of
   // sliding to its new position, while every other card still slides.
@@ -91,7 +115,7 @@ export function PostCarousel({ posts }: { posts: Post[] }) {
   return (
     <div className="w-full">
       <div
-        className="relative h-96 w-full overflow-hidden sm:h-[28rem]"
+        className="relative h-80 w-full overflow-hidden sm:h-[28rem]"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
@@ -102,8 +126,8 @@ export function PostCarousel({ posts }: { posts: Post[] }) {
           const isSettling = post.id === settledId;
 
           const left =
-            offset === 0 ? 0 : ACTIVE_WIDTH + GAP + (offset - 1) * (ITEM_WIDTH + GAP);
-          const width = isActive ? ACTIVE_WIDTH : ITEM_WIDTH;
+            offset === 0 ? 0 : activeWidth + gap + (offset - 1) * (itemWidth + gap);
+          const width = isActive ? activeWidth : itemWidth;
 
           return (
             <div
@@ -132,7 +156,7 @@ export function PostCarousel({ posts }: { posts: Post[] }) {
                 // same instant — that instant resize was what made it
                 // read as "disappearing" rather than fading.
                 left: isOutgoing ? 0 : `${left}%`,
-                width: isOutgoing ? `${ACTIVE_WIDTH}%` : `${width}%`,
+                width: isOutgoing ? `${activeWidth}%` : `${width}%`,
                 opacity: isOutgoing ? 0 : isActive ? 1 : 0.75,
                 // Kept below everything else so the incoming card visibly
                 // slides in over it as it fades, per "next card comes over".
@@ -148,7 +172,7 @@ export function PostCarousel({ posts }: { posts: Post[] }) {
                   src={`https://picsum.photos/id/${CARD_IMAGE_IDS[(post.id - 1) % CARD_IMAGE_IDS.length]}/640/480`}
                   alt=""
                   fill
-                  sizes="(min-width: 640px) 46vw, 70vw"
+                  sizes="(min-width: 640px) 46vw, 86vw"
                   className="object-cover"
                   priority={isActive}
                 />
@@ -165,7 +189,7 @@ export function PostCarousel({ posts }: { posts: Post[] }) {
                   {isActive ? (
                     <Link
                       href={`/posts/${post.id}`}
-                      className="group mt-3 inline-flex w-fit items-center gap-1.5 text-sm font-medium text-white hover:text-brand-200"
+                      className="group mt-3 inline-flex w-fit items-center gap-1.5 text-sm font-medium text-white hover:text-brand-700"
                       onClick={(event) => event.stopPropagation()}
                     >
                       Read post
@@ -179,15 +203,17 @@ export function PostCarousel({ posts }: { posts: Post[] }) {
         })}
       </div>
 
-      <div className="mt-10 flex items-center justify-center gap-5">
+      <div className="mt-6 flex flex-wrap items-center justify-center gap-2 sm:mt-10 sm:gap-5">
         {posts.map((post, index) => (
           <button
             key={post.id}
             type="button"
             onClick={() => goTo(index)}
             aria-label={`Go to post ${post.id}`}
-            className={`h-3 rounded-full transition-all duration-300 ${
-              index === activeIndex ? "w-20 bg-brand-700" : "w-3 bg-stone-300"
+            className={`h-2 rounded-full transition-all duration-300 sm:h-3 ${
+              index === activeIndex
+                ? "w-8 bg-brand-700 sm:w-20"
+                : "w-2 bg-stone-300 sm:w-3"
             }`}
           />
         ))}

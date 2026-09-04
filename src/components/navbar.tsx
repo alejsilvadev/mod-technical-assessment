@@ -65,7 +65,10 @@ export function Navbar() {
       // its top can never scroll up to the trigger line before the page
       // runs out of room to scroll — the document simply isn't tall
       // enough. Treat "scrolled to the bottom" as activating it too.
+      // Guarded on scrollY > 0 so a short page doesn't already read as
+      // "at the bottom" while still sitting untouched at the top on load.
       const atBottom =
+        window.scrollY > 0 &&
         window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 2;
       if (atBottom) {
         current = sections[sections.length - 1].id;

@@ -21,10 +21,10 @@ export default async function Home() {
                 About
               </p>
               <p className="mt-4 text-2xl leading-relaxed text-stone-600">
-                I started out building with Legos, piecing together little worlds brick by
-                brick. These days I build websites and digital experiences instead, but the
-                instinct is the same: take small parts and put them together into something
-                that works.
+                I show up motivated, and I like being part of a team that pushes each
+                other to do better work. I care about getting the details right, from
+                the logic to the layout to the small interactions most people never
+                notice. Give me something to build and I&apos;m all in.
               </p>
             </>
           }
@@ -34,9 +34,10 @@ export default async function Home() {
                 Approach
               </p>
               <p className="mt-4 text-2xl leading-relaxed text-stone-600">
-                I care about the details most people scroll past — the easing on a hover
-                state, the way a layout still breathes at 375px. Good software feels
-                inevitable once it&apos;s done; getting there is the part I actually enjoy.
+                I start with the vision, then break it down into the parts that actually
+                make it work. The structure, the flow, the screens, the little
+                interactions that make something feel finished. Piece by piece, that
+                vision turns into a real digital experience people can use.
               </p>
             </>
           }

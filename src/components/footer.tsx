@@ -12,7 +12,7 @@ export function Footer() {
     <footer className="bg-stone-900 text-stone-300">
       <div className="mx-auto w-full max-w-6xl px-6 py-16">
         <p className="whitespace-nowrap font-sans text-xl font-semibold leading-tight text-white sm:text-4xl sm:leading-tight lg:text-[72px] lg:leading-[86.4px]">
-          LET&apos;S WORK TOGETHER
+          LET&apos;S DO IT
         </p>
 
         <div className="mt-10 flex flex-wrap items-center gap-x-8 gap-y-4 border-t border-stone-800 pt-8">
