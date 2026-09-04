@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ArrowDownIcon } from "@/components/icons";
 
 const SIZE = 480;
@@ -12,11 +12,15 @@ const TILT_DEG = 42;
 // sweeps around, the way Earth's axis stays pointed at Polaris while the
 // hemisphere it leans toward the sun rotates through the year. Sweeping this
 // azimuth is a rigid rotation of the whole sphere around its own center, so
-// the outer silhouette stays a perfect circle throughout — nothing squashes
-// (a 180° sweep would coincidentally return to a near-identical resting look,
-// since this evenly-spaced latitude pattern is symmetric about its center)
+// the outer silhouette stays a perfect circle throughout — nothing squashes.
+// At azimuth 0 every latitude ellipse is axis-aligned and centered on the
+// vertical midline, so that base pattern is already its own mirror image —
+// which means the mirror of the azimuth-θ pattern is exactly the azimuth-(-θ)
+// pattern. Ending the sweep at the negated start angle therefore lands on a
+// true horizontal flip of the starting look, with no reflection transform
+// (and none of the squash a scaleX-based flip would need) ever required.
 const AZIMUTH_START_DEG = -20;
-const AZIMUTH_END_DEG = AZIMUTH_START_DEG + 90;
+const AZIMUTH_END_DEG = -AZIMUTH_START_DEG;
 const TRACK_HEIGHT_VH = 420;
 const BRAND_RED = "#d4021c";
 
@@ -28,14 +32,17 @@ const DRAW_END = 0.35;
 const MOVE_END = 0.65;
 const STAGGER_SPAN = 0.88;
 
-const X_START_VW = 26;
-const X_END_VW = -26;
+// fractions of the component's own rendered width, not the viewport — so the
+// sphere's travel scales correctly whether it's full-bleed (the lab page) or
+// boxed into a narrower content column (the homepage section)
+const X_START_FRACTION = 0.26;
+const X_END_FRACTION = -0.26;
 
 // idle "breathing" ripple: each line oscillates along the sphere's own tilt
 // axis, and lines further down lag further behind in phase — so at any
 // instant the top line is already reversing while the ones below it are
 // still catching up, reading as a wave that travels down the sphere and back
-const BREATH_AMPLITUDE = 7;
+const BREATH_AMPLITUDE = 12;
 const BREATH_PERIOD_S = 3.4;
 const BREATH_PHASE_STEP = (1.6 * Math.PI) / (LINE_COUNT - 1);
 
@@ -80,12 +87,30 @@ function staggeredLocal(phaseT: number, order: number): number {
   return easeInOutCubic(clamp01(raw));
 }
 
-export function WireframeSphere() {
+interface WireframeSphereProps {
+  // shown on the left while the sphere sits on the right, and faded out as
+  // it starts moving left; rightSlot is the mirror image of that timing
+  leftSlot?: ReactNode;
+  rightSlot?: ReactNode;
+  // Tailwind background class for the sticky stage — defaults to the plain
+  // white the lab page was tuned against; the homepage passes the site's
+  // own background token so the section reads as part of the page
+  backgroundClassName?: string;
+}
+
+export function WireframeSphere({
+  leftSlot,
+  rightSlot,
+  backgroundClassName = "bg-white",
+}: WireframeSphereProps = {}) {
   const trackRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const groupRef = useRef<SVGGElement>(null);
   const cueRef = useRef<HTMLDivElement>(null);
+  const leftSlotRef = useRef<HTMLDivElement>(null);
+  const rightSlotRef = useRef<HTMLDivElement>(null);
   // safe to read matchMedia synchronously here: this component only ever
   // renders client-side, via next/dynamic with ssr:false
   const [reducedMotion, setReducedMotion] = useState(
@@ -144,15 +169,19 @@ export function WireframeSphere() {
       }
       const eased = easeInOutCubic(moveT);
 
-      if (stageRef.current) {
-        const x = X_START_VW + (X_END_VW - X_START_VW) * eased;
-        stageRef.current.style.transform = `translateX(${x}vw)`;
+      if (stageRef.current && containerRef.current) {
+        const width = containerRef.current.getBoundingClientRect().width;
+        const fraction = X_START_FRACTION + (X_END_FRACTION - X_START_FRACTION) * eased;
+        stageRef.current.style.transform = `translateX(${fraction * width}px)`;
       }
 
       if (groupRef.current) {
         const azimuth = AZIMUTH_START_DEG + (AZIMUTH_END_DEG - AZIMUTH_START_DEG) * eased;
         groupRef.current.setAttribute("transform", `rotate(${azimuth} ${CENTER} ${CENTER})`);
       }
+
+      if (leftSlotRef.current) leftSlotRef.current.style.opacity = String(1 - eased);
+      if (rightSlotRef.current) rightSlotRef.current.style.opacity = String(eased);
 
       if (cueRef.current) cueRef.current.style.opacity = progress > 0.03 ? "0" : "1";
     }
@@ -199,7 +228,29 @@ export function WireframeSphere() {
 
   return (
     <div ref={trackRef} className="relative" style={{ height: `${TRACK_HEIGHT_VH}vh` }}>
-      <div className="sticky top-0 flex h-screen flex-col items-center justify-center gap-8 overflow-hidden bg-white">
+      <div
+        ref={containerRef}
+        className={`sticky top-0 flex h-screen flex-col items-center justify-center gap-8 overflow-hidden ${backgroundClassName}`}
+      >
+        {leftSlot && (
+          <div
+            ref={leftSlotRef}
+            className="pointer-events-none absolute left-0 top-1/2 w-full max-w-sm -translate-y-1/2 px-6 sm:max-w-md md:px-12 lg:max-w-lg"
+          >
+            {leftSlot}
+          </div>
+        )}
+
+        {rightSlot && (
+          <div
+            ref={rightSlotRef}
+            className="pointer-events-none absolute right-0 top-1/2 w-full max-w-sm -translate-y-1/2 px-6 sm:max-w-md md:px-12 lg:max-w-lg"
+            style={{ opacity: 0 }}
+          >
+            {rightSlot}
+          </div>
+        )}
+
         <div
           ref={cueRef}
           className="absolute top-24 flex flex-col items-center gap-2 text-xs text-stone-400 opacity-0 transition-opacity duration-300"
@@ -228,7 +279,7 @@ export function WireframeSphere() {
                   ry={line.ry}
                   stroke={BRAND_RED}
                   strokeOpacity={0.9}
-                  strokeWidth={1.4}
+                  strokeWidth={2}
                 />
               ))}
             </g>

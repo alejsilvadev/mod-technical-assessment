@@ -1,15 +1,32 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import type { ReactNode } from "react";
 
 const WireframeSphere = dynamic(
   () => import("@/components/wireframe-sphere").then((mod) => mod.WireframeSphere),
   {
     ssr: false,
-    loading: () => <div className="h-[100vh] bg-stone-900" />,
+    loading: () => <div className="h-[100vh] bg-background" />,
   }
 );
 
-export function WireframeSphereLoader() {
-  return <WireframeSphere />;
+interface WireframeSphereLoaderProps {
+  leftSlot?: ReactNode;
+  rightSlot?: ReactNode;
+  backgroundClassName?: string;
+}
+
+export function WireframeSphereLoader({
+  leftSlot,
+  rightSlot,
+  backgroundClassName,
+}: WireframeSphereLoaderProps) {
+  return (
+    <WireframeSphere
+      leftSlot={leftSlot}
+      rightSlot={rightSlot}
+      backgroundClassName={backgroundClassName}
+    />
+  );
 }

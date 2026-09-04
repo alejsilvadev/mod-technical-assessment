@@ -2,6 +2,7 @@ import { getPosts } from "@/lib/posts";
 import { ReadCounterBadge } from "@/components/read-counter-badge";
 import { PostCarousel } from "@/components/post-carousel";
 import { LogoReveal } from "@/components/logo-reveal";
+import { WireframeSphereLoader } from "@/components/wireframe-sphere-loader";
 
 export default async function Home() {
   const posts = await getPosts();
@@ -10,24 +11,35 @@ export default async function Home() {
     <>
       <LogoReveal />
 
-      <section
-        id="about"
-        className="mx-auto flex min-h-[70vh] w-full max-w-6xl items-center px-6 py-16"
-      >
-        <div className="grid w-full grid-cols-1 gap-12 md:grid-cols-2">
-          <div>
-            <p className="font-sans text-[18px] font-bold uppercase leading-[28px] text-brand-700">
-              About
-            </p>
-            <p className="mt-4 text-2xl leading-relaxed text-stone-600">
-              I started out building with Legos, piecing together little worlds brick by
-              brick. These days I build websites and digital experiences instead, but the
-              instinct is the same: take small parts and put them together into something
-              that works.
-            </p>
-          </div>
-          <div />
-        </div>
+      <section id="about" className="mx-auto w-full max-w-6xl px-6">
+        <WireframeSphereLoader
+          backgroundClassName="bg-background"
+          leftSlot={
+            <>
+              <p className="font-sans text-[18px] font-bold uppercase leading-[28px] text-brand-700">
+                About
+              </p>
+              <p className="mt-4 text-2xl leading-relaxed text-stone-600">
+                I started out building with Legos, piecing together little worlds brick by
+                brick. These days I build websites and digital experiences instead, but the
+                instinct is the same: take small parts and put them together into something
+                that works.
+              </p>
+            </>
+          }
+          rightSlot={
+            <>
+              <p className="font-sans text-[18px] font-bold uppercase leading-[28px] text-brand-700">
+                Approach
+              </p>
+              <p className="mt-4 text-2xl leading-relaxed text-stone-600">
+                I care about the details most people scroll past — the easing on a hover
+                state, the way a layout still breathes at 375px. Good software feels
+                inevitable once it&apos;s done; getting there is the part I actually enjoy.
+              </p>
+            </>
+          }
+        />
       </section>
 
       <main
