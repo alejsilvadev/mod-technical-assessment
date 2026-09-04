@@ -10,8 +10,11 @@ export default async function Home() {
     <>
       <LogoReveal />
 
-      <section id="about" className="mx-auto w-full max-w-6xl px-6 py-24">
-        <div className="grid grid-cols-1 gap-12 md:grid-cols-2">
+      <section
+        id="about"
+        className="mx-auto flex min-h-[70vh] w-full max-w-6xl items-center px-6 py-16"
+      >
+        <div className="grid w-full grid-cols-1 gap-12 md:grid-cols-2">
           <div>
             <p className="font-sans text-[18px] font-bold uppercase leading-[28px] text-brand-700">
               About
@@ -27,7 +30,10 @@ export default async function Home() {
         </div>
       </section>
 
-      <main id="assessment" className="mx-auto w-full max-w-6xl flex-1 px-6 py-12">
+      <main
+        id="assessment"
+        className="mx-auto flex min-h-screen w-full max-w-6xl flex-1 flex-col justify-center px-6 py-12"
+      >
         <div className="mb-8 flex items-end justify-between gap-4">
           <div>
             <p className="font-sans text-[18px] font-bold uppercase leading-[28px] text-brand-700">

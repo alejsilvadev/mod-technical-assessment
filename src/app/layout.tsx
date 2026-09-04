@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Figtree, Bodoni_Moda } from "next/font/google";
 import { ReadCounterProvider } from "@/context/read-counter";
 import { Navbar } from "@/components/navbar";
+import { Footer } from "@/components/footer";
 import "./globals.css";
 
 const figtree = Figtree({
@@ -29,6 +30,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <ReadCounterProvider>
           <Navbar />
           {children}
+          <Footer />
         </ReadCounterProvider>
       </body>
     </html>

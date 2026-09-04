@@ -36,6 +36,25 @@ export function ArrowLeftIcon({ className }: { className?: string }) {
   );
 }
 
+export function ArrowUpRightIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      fill="none"
+      className={className}
+      aria-hidden
+    >
+      <path
+        d="M4.5 11.5l7-7M6 4.5h5.5V10"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export function ArrowDownIcon({ className }: { className?: string }) {
   return (
     <svg

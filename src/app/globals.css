@@ -5,6 +5,14 @@
   --foreground: #1c1917;
 }
 
+html {
+  /* Always reserve the scrollbar gutter, even while scrolling is locked
+     (see logo-reveal.tsx) — otherwise the gutter appears/disappears when
+     body overflow toggles between hidden and visible, shifting the whole
+     page horizontally. */
+  scrollbar-gutter: stable;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
